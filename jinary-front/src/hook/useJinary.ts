@@ -1,9 +1,14 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+
+interface UseJinaryOptions {
+  autoFetch?: boolean;
+}
 
 // decodeFunction은 외부에서 주입받도록 설계하여 확장성을 높임
 export const useJinary = <T>(
   url: string,
   decodeFunction: (binary: Uint8Array) => T,
+  options: UseJinaryOptions = {},
 ) => {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -62,6 +67,12 @@ export const useJinary = <T>(
       setLoading(false);
     }
   }, [url, decodeFunction]);
+
+  useEffect(() => {
+    if (options.autoFetch) {
+      fetchData();
+    }
+  }, [options.autoFetch, fetchData]);
 
   // 반환값: UI에 필요한 모든 상태와 fetch 함수
   return { data, loading, error, meta, fetchData };
