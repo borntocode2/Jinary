@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';                                                                                         
+import { useJinary } from './hook/useJinary';                                                                      
 import { decodeUserList } from './proto/user_proto_bundle.js';
-
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
 
 function formatBytes(bytes) {
@@ -14,55 +14,14 @@ function formatBytes(bytes) {
 }
 
 function App() {
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const { data, loading, error, meta, fetchData } = useJinary(                                                       
+    BACKEND_URL,  
+    decodeUserList
+  );
 
-  const fetchAndDecode = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`${BACKEND_URL}`, {
-        headers: { Accept: 'application/x-protobuf' },
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          `서버 응답 오류: ${response.status} ${response.statusText}`,
-        );
-      }
-
-      // 응답을 ArrayBuffer로 변환 → Uint8Array로 감싸기
-      const arrayBuffer = await response.arrayBuffer();
-      const binaryData = new Uint8Array(arrayBuffer);
-      const protobufSize = binaryData.byteLength;
-
-      // Protobuf 바이너리 → JS 객체로 디코딩
-      const decoded = decodeUserList(binaryData);
-
-      // 같은 데이터를 JSON으로 직렬화했을 때의 크기 비교
-      const jsonSize = new TextEncoder().encode(
-        JSON.stringify(decoded),
-      ).byteLength;
-      const savedPercent = ((1 - protobufSize / jsonSize) * 100).toFixed(1);
-
-      setResult({
-        userCount: decoded.users.length,
-        jsonSize,
-        protobufSize,
-        savedPercent,
-        decodedPreview: decoded.users.slice(0, 3),
-        rawHex: Array.from(binaryData.slice(0, 50))
-          .map((b) => b.toString(16).padStart(2, '0'))
-          .join(' '),
-      });
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const savedPercent = meta.jsonSize > 0                                                                             
+    ? ((1 - meta.protobufSize / meta.jsonSize) * 100).toFixed(1)
+    : '0';
 
   return (
     <div
@@ -81,7 +40,7 @@ function App() {
       </p>
 
       <button
-        onClick={fetchAndDecode}
+        onClick={fetchData}
         disabled={loading}
         style={{
           padding: '14px 32px',
@@ -113,7 +72,7 @@ function App() {
           {error}
         </div>
       )}
-      {result && (
+      {data && (
         <div>
           <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
             <div
@@ -139,12 +98,12 @@ function App() {
               <div
                 style={{ fontSize: '28px', fontWeight: 'bold', color: '#333' }}
               >
-                {formatBytes(result.jsonSize)}
+                {formatBytes(meta.jsonSize)}
               </div>
               <div
                 style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}
               >
-                {result.jsonSize.toLocaleString()} bytes
+                {meta.jsonSize.toLocaleString()} bytes
               </div>
             </div>
 
@@ -171,12 +130,12 @@ function App() {
               <div
                 style={{ fontSize: '28px', fontWeight: 'bold', color: '#333' }}
               >
-                {formatBytes(result.protobufSize)}
+                {formatBytes(meta.protobufSize)}
               </div>
               <div
                 style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}
               >
-                {result.protobufSize.toLocaleString()} bytes
+                {meta.protobufSize.toLocaleString()} bytes
               </div>
             </div>
           </div>
@@ -195,11 +154,11 @@ function App() {
               Protobuf가 JSON보다
             </div>
             <div style={{ fontSize: '36px', fontWeight: 'bold' }}>
-              {result.savedPercent}% 작음
+              {savedPercent}% 작음
             </div>
             <div style={{ fontSize: '13px', opacity: 0.8 }}>
-              {result.userCount}명 기준 |{' '}
-              {formatBytes(result.jsonSize - result.protobufSize)} 절감
+              {data.users.length}명 기준 |{' '}
+              {formatBytes(meta.jsonSize - meta.protobufSize)} 절감
             </div>
           </div>
 
@@ -235,7 +194,7 @@ function App() {
                 borderRadius: 0,
               }}
             >
-              {result.rawHex}
+              {meta.rawHex}
             </code>
           </div>
           <div
@@ -256,7 +215,7 @@ function App() {
             >
               디코딩 검증 (처음 3명)
             </div>
-            {result.decodedPreview.map((user, i) => (
+            {data.users.slice(0, 3).map((user, i) => (
               <div
                 key={i}
                 style={{
