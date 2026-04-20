@@ -60,5 +60,6 @@
     2. useState에 각각 타입들을 명시해줬습니다.
     3. 메타데이터는 성능 측정을 위해 두었지만, 그래도 인터페이스로 타입을 명시해줬습니다. useState에도 인터페이스 타입 명시했습니다.
     4. try catch로 간단하게 에러 처리를 하고있지만, unknown 타입이라 타입에 가드를 줬습니다.
+       [feat/#5-mySelf] 마운트시 자동으로 fetch 되도록 useEffect 구현
 
 - backend

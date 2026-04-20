@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { jinary, JinaryMeta } from '../core/jinary';
 
 interface UseJinaryOptions {
   autoFetch?: boolean;
@@ -14,11 +15,6 @@ export const useJinary = <T>(
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  interface JinaryMeta {
-    protobufSize: number;
-    jsonSize: number;
-    rawHex: string;
-  }
   // 성능 측정을 위한 메타데이터 상태
   const [meta, setMeta] = useState<JinaryMeta>({
     protobufSize: 0,
@@ -31,36 +27,9 @@ export const useJinary = <T>(
     setError(null);
 
     try {
-      const response = await fetch(url, {
-        headers: { Accept: 'application/x-protobuf' },
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          `서버 응답 오류: ${response.status} ${response.statusText}`,
-        );
-      }
-
-      const arrayBuffer = await response.arrayBuffer();
-      const binaryData = new Uint8Array(arrayBuffer);
-      const protobufSize = binaryData.byteLength;
-
-      // 주입받은 디코딩 함수 실행
-      const decoded = decodeFunction(binaryData);
-
-      // JSON 크기 비교 로직 (메타데이터용)
-      const jsonSize = new TextEncoder().encode(
-        JSON.stringify(decoded),
-      ).byteLength;
-
-      setData(decoded);
-      setMeta({
-        protobufSize,
-        jsonSize,
-        rawHex: Array.from(binaryData.slice(0, 50))
-          .map((b) => b.toString(16).padStart(2, '0'))
-          .join(' '),
-      });
+      const result = await jinary.get(url, decodeFunction);                                                                                
+      setData(result.data);
+      setMeta(result.meta);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
