@@ -33,3 +33,48 @@ Node.js에게 protobufjs 패키지 안에 있는 pbjs라는 번역기(변환 도
 ```
 npm run proto:gen
 ```
+
+---
+
+# 다음 작업: 코어 API 확장
+
+현재 `core/jinary.ts`에는 `jinary.get()` 하나만 존재합니다.
+axios처럼 범용적으로 사용할 수 있도록 코어 API를 확장해야 합니다.
+
+## 구현 목표
+
+### 1. `jinary.create(config)` — 인스턴스 생성
+- baseURL, 공통 헤더, timeout 등 설정을 담는 인스턴스를 생성
+- 매 요청마다 전체 URL을 쓰지 않고, 상대 경로만으로 요청 가능
+
+```typescript
+const client = jinary.create({
+  baseURL: 'https://api.example.com',
+  timeout: 5000,
+  headers: { Authorization: 'Bearer token' }
+});
+
+client.get('/users', decodeFunction);
+```
+
+### 2. POST 메서드 추가
+- 바이너리 데이터를 서버로 보내는 것도 지원
+
+```typescript
+client.post('/users', bodyData, decodeFunction);
+```
+
+### 3. 요청 옵션 확장
+- timeout: 요청 제한 시간
+- headers: 요청별 커스텀 헤더
+- 기타 필요한 설정 추가
+
+## 현재 구조
+
+```
+src/
+├── core/
+│   └── jinary.ts       ← 여기를 확장
+├── hook/
+│   └── useJinary.ts    ← 코어를 감싸는 React 래퍼 (코어 확장 후 연동)
+```

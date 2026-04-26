@@ -9,6 +9,60 @@ interface JinaryResponse<T> {
     meta: JinaryMeta;
 }
 
+interface JinaryConfig {
+    baseURL: string;
+    timeout?: number;
+    headers?: Record<string, string>;
+}
+
+function create(config: JinaryConfig) {                                                                            
+    return {                                                                                                     
+        get: async <T>(url: string, decodeFunction: (binary: Uint8Array) => T): Promise<JinaryResponse<T>> => {                                                                  
+            const fullURL = config.baseURL + url;
+            const controller = new AbortController();
+            let timeoutId: number | undefined;
+            if (config.timeout) {
+                timeoutId = setTimeout(() => controller.abort(), config.timeout);
+            }
+            const mergedHeaders = {                                                                                
+                Accept: 'application/x-protobuf',                                                                  
+                ...config.headers,                                                                               
+            };
+            const response = await fetch(fullURL, {
+                headers: mergedHeaders,
+                signal: controller.signal,
+            });                      
+            if(timeoutId) clearTimeout(timeoutId);                                                                               
+            if (!response.ok) {                                                                                                
+                throw new Error(
+                    `서버 응답 오류: ${response.status} ${response.statusText}`,                                               
+                );                                                                                                           
+            }
+
+            const arrayBuffer = await response.arrayBuffer();                                                                  
+            const binaryData = new Uint8Array(arrayBuffer);
+            const protobufSize = binaryData.byteLength;                                                                        
+
+            const decoded = decodeFunction(binaryData);
+
+            const jsonSize = new TextEncoder().encode(
+                JSON.stringify(decoded),
+            ).byteLength;                                                                                                      
+
+            return {                                                                                                           
+                data: decoded,                                                                                               
+                meta: {
+                    protobufSize,
+                    jsonSize,
+                    rawHex: Array.from(binaryData.slice(0, 50))
+                        .map((b) => b.toString(16).padStart(2, '0'))
+                        .join(' '),                                                                                            
+                },
+            };
+        }                                                                                                          
+    }                                                                                                            
+} 
+
 async function get<T>(
     url: string,
     decodeFunction: (binary: Uint8Array) => T
@@ -47,5 +101,5 @@ async function get<T>(
       };
   } 
 
-export const jinary = { get };
+export const jinary = { create, get };
 export type { JinaryMeta, JinaryResponse };
