@@ -26,12 +26,15 @@ public class TestController {
         return new UserPayload(202417051, "Sanghwa", "test@skhu.ac.kr");
     }
 
+    // 응답은 자바객체, JSON이 아니라 Jinary컨버터를 통해 바이너리로 직렬화한 값을 반환
     @Jinary
     @GetMapping(value = "/test/binary", produces = JinaryMediaTypes.APPLICATION_JINARY)
     public UserPayload getBinaryData() {
         return new UserPayload(202417051, "Sanghwa", "test@skhu.ac.kr");
     }
 
+    // 파라미터는 바이너리 데이터, 하지만 Jinary를 통해 자동으로 UserPayload라는 자바 객체로 바꿔줌
+    // DTO(자바객체)통신으로 보이지만 프론트에서 JSON-바이너리 역직렬화가 구현되어있다면, 바이너리 데이터가 통신하면서 속도 증가
     @Jinary
     @PostMapping(
             value = "/test/json-from-binary",

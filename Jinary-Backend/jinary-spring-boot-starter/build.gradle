@@ -1,5 +1,11 @@
 plugins {
     id 'java-library'
+    id 'maven-publish'
+}
+
+java {
+    withSourcesJar()
+    withJavadocJar()
 }
 
 dependencies {
@@ -7,4 +13,18 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-autoconfigure'
     implementation 'org.springframework:spring-webmvc'
     implementation 'com.fasterxml.jackson.core:jackson-databind'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifactId = 'jinary-spring-boot-starter'
+
+            pom {
+                name = 'jinary-spring-boot-starter'
+                description = 'Spring Boot starter for Jinary protobuf transport'
+            }
+        }
+    }
 }

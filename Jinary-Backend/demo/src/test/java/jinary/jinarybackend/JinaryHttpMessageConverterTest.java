@@ -18,6 +18,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class JinaryHttpMessageConverterTest {
 
+    private static final UserPayload DEFAULT_USER =
+            new UserPayload(202417051, "Sanghwa", "test@skhu.ac.kr");
+
     @Autowired
     private JinaryCodec jinaryCodec;
 
@@ -25,6 +28,24 @@ class JinaryHttpMessageConverterTest {
     private int port;
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
+
+    @Test
+    void returnsJsonPayloadFromDto() throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(baseUrl("/test/json")))
+                .header("Accept", "application/json")
+                .GET()
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.headers().firstValue("content-type")).hasValueSatisfying(value ->
+                assertThat(value).startsWith("application/json"));
+        assertThat(response.body()).contains("\"id\":202417051");
+        assertThat(response.body()).contains("\"name\":\"Sanghwa\"");
+        assertThat(response.body()).contains("\"email\":\"test@skhu.ac.kr\"");
+    }
 
     @Test
     void returnsBinaryPayloadFromDto() throws Exception {
@@ -40,9 +61,7 @@ class JinaryHttpMessageConverterTest {
         assertThat(response.headers().firstValue("content-type")).hasValue(JinaryMediaTypes.APPLICATION_JINARY);
 
         UserPayload payload = jinaryCodec.decode(response.body(), UserPayload.class);
-        assertThat(payload).isEqualTo(
-                new UserPayload(202417051, "Sanghwa", "test@skhu.ac.kr")
-        );
+        assertThat(payload).isEqualTo(DEFAULT_USER);
     }
 
     @Test
