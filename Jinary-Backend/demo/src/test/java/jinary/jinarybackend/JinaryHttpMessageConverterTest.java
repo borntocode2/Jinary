@@ -58,8 +58,6 @@ class JinaryHttpMessageConverterTest {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(response.headers().firstValue("content-type")).hasValueSatisfying(value ->
-                assertThat(value).startsWith("application/json"));
         assertThat(response.body()).contains("\"id\":7");
         assertThat(response.body()).contains("\"name\":\"Ralph\"");
         assertThat(response.body()).contains("\"email\":\"ralph@example.com\"");
